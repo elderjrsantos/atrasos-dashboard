@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<!-- saved from url=(0118)file:///C:/Users/elder.santos/OneDrive%20-%20FINAN%20FACTORING/%C3%81rea%20de%20Trabalho/Dashboard%20de%20Atrasos.html -->
+<html lang="pt-BR"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Atrasos</title>
+<script src="./Dashboard de Atrasos_files/chart.umd.min.js.transferir"></script>
+<script src="./Dashboard de Atrasos_files/xlsx.full.min.js.transferir"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+:root {
+  --bg:#f1f5f9; --surface:#fff; --surface2:#f8fafc; --border:#e2e8f0; --border2:#cbd5e1;
+  --text:#0f172a; --muted:#64748b; --muted2:#94a3b8;
+  --accent:#2563eb; --accent-l:#dbeafe;
+  --red:#dc2626; --red-l:#fee2e2;
+  --orange:#ea580c; --orange-l:#ffedd5;
+  --green:#16a34a; --green-l:#dcfce7;
+  --purple:#7c3aed; --purple-l:#ede9fe;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; }
+
+header { background:var(--surface); border-bottom:1px solid var(--border); padding:1rem 2rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; box-shadow:0 1px 3px rgba(0,0,0,.06); position:sticky; top:0; z-index:100; }
+.logo h1 { font-size:1.15rem; font-weight:800; color:var(--accent); letter-spacing:-.02em; }
+.logo p  { font-family:'JetBrains Mono',monospace; font-size:.6rem; color:var(--muted); letter-spacing:.08em; margin-top:.1rem; }
+.ano-btns { display:flex; gap:.4rem; }
+.ano-btn { font-size:.75rem; font-weight:600; padding:.35rem .9rem; border-radius:6px; border:1px solid var(--border2); background:var(--surface2); color:var(--muted); cursor:pointer; transition:all .15s; }
+.ano-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.ano-btn:hover:not(.active) { border-color:var(--accent); color:var(--accent); }
+.action-btns { display:flex; gap:.4rem; align-items:center; flex-wrap:wrap; }
+.action-btn { font-size:.72rem; font-weight:600; padding:.35rem .85rem; border-radius:6px; cursor:pointer; transition:all .15s; display:flex; align-items:center; gap:.35rem; border:1px solid; }
+.btn-upload { background:linear-gradient(135deg,#2563eb,#7c3aed); color:#fff; border-color:transparent; font-weight:700; }
+.btn-upload:hover { opacity:.88; }
+.btn-print  { background:#f1f5f9; color:#475569; border-color:var(--border2); }
+.btn-print:hover { background:#475569; color:#fff; }
+.btn-excel  { background:#f0fdf4; color:#16a34a; border-color:#86efac; }
+.btn-excel:hover { background:#16a34a; color:#fff; }
+#uploadInput { display:none; }
+#headerFileBadge { flex-direction:column; gap:.05rem; }
+#headerFileName { font-family:'JetBrains Mono',monospace; font-size:.65rem; color:var(--muted); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.nav { background:var(--surface); border-bottom:1px solid var(--border); display:flex; padding:0 2rem; }
+.nav-btn { font-size:.82rem; font-weight:600; padding:.8rem 1.1rem; border:none; background:transparent; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .15s; }
+.nav-btn:hover { color:var(--text); }
+.nav-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+main { padding:1.5rem 2rem; display:flex; flex-direction:column; gap:1.2rem; }
+.filter-row { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+.filter-label { font-size:.7rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+.filter-btn { font-size:.72rem; font-weight:600; padding:.3rem .8rem; border-radius:20px; border:1.5px solid var(--border2); background:transparent; color:var(--muted); cursor:pointer; transition:all .15s; }
+.filter-btn.active.f-blue   { background:var(--accent-l);  color:var(--accent);  border-color:var(--accent); }
+.filter-btn.active.f-red    { background:var(--red-l);     color:var(--red);     border-color:var(--red); }
+.filter-btn.active.f-purple { background:var(--purple-l);  color:var(--purple);  border-color:var(--purple); }
+.filter-btn.active.f-orange { background:var(--orange-l);  color:var(--orange);  border-color:var(--orange); }
+.filter-btn.active.f-green  { background:var(--green-l);   color:var(--green);   border-color:var(--green); }
+
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:.8rem; }
+.kpi-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1rem 1.1rem; display:flex; flex-direction:column; gap:.2rem; border-top:3px solid var(--card-accent,var(--accent)); box-shadow:0 1px 3px rgba(0,0,0,.04); }
+.kpi-label { font-size:.65rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; }
+.kpi-val   { font-size:1.2rem; font-weight:800; color:var(--card-accent,var(--accent)); letter-spacing:-.02em; margin-top:.1rem; }
+.kpi-sub   { font-family:'JetBrains Mono',monospace; font-size:.62rem; color:var(--muted2); }
+.kpi-diff  { font-size:.7rem; font-weight:600; margin-top:.15rem; }
+.up { color:var(--green); } .dn { color:var(--red); }
+
+.card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1.2rem 1.4rem; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+.card-title    { font-size:.88rem; font-weight:700; }
+.card-subtitle { font-family:'JetBrains Mono',monospace; font-size:.6rem; color:var(--muted); margin-top:.15rem; margin-bottom:1rem; }
+.chart-wrap { position:relative; height:280px; }
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+
+.conf-bar { background:var(--surface); border-bottom:1px solid var(--border); padding:.85rem 2rem; display:flex; align-items:center; gap:.8rem; flex-wrap:wrap; position:sticky; top:57px; z-index:90; }
+.conf-bar h2 { font-size:.85rem; font-weight:700; }
+.sel { font-family:'JetBrains Mono',monospace; font-size:.7rem; padding:.32rem .65rem; border-radius:6px; border:1px solid var(--border2); background:var(--surface2); color:var(--text); cursor:pointer; outline:none; }
+.sm-btn { font-size:.7rem; font-weight:600; padding:.3rem .75rem; border-radius:6px; border:1px solid var(--border2); background:var(--surface2); color:var(--muted); cursor:pointer; transition:all .15s; }
+.sm-btn:hover { border-color:var(--accent); color:var(--accent); }
+.conf-body { padding:1.4rem 2rem; display:flex; flex-direction:column; gap:1.4rem; }
+
+.mes-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+.mes-hd { padding:.8rem 1.2rem; background:var(--surface2); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+.mes-hd h3 { font-size:.92rem; font-weight:700; }
+.mes-hd-r { display:flex; gap:.4rem; align-items:center; flex-wrap:wrap; }
+.tag { font-family:'JetBrains Mono',monospace; font-size:.62rem; font-weight:500; padding:.18rem .55rem; border-radius:20px; border:1px solid; }
+.tag-blue   { background:var(--accent-l);  color:var(--accent);  border-color:#93c5fd; }
+.tag-red    { background:var(--red-l);     color:var(--red);     border-color:#fca5a5; }
+.tag-orange { background:var(--orange-l);  color:var(--orange);  border-color:#fdba74; }
+.tag-green  { background:var(--green-l);   color:var(--green);   border-color:#86efac; }
+.tag-gray   { background:var(--surface2);  color:var(--muted);   border-color:var(--border2); }
+.tag-purple { background:var(--purple-l);  color:var(--purple);  border-color:#c4b5fd; }
+.chevron { font-size:.72rem; color:var(--muted2); transition:transform .2s; flex-shrink:0; }
+.mes-card.collapsed .chevron { transform:rotate(-90deg); }
+.mes-card.collapsed .mes-body { display:none; }
+.mes-body { padding:1.1rem 1.2rem; display:flex; flex-direction:column; gap:1rem; }
+
+.diff-row { display:flex; gap:.4rem; flex-wrap:wrap; }
+.pill { font-family:'JetBrains Mono',monospace; font-size:.65rem; padding:.18rem .55rem; border-radius:4px; font-weight:500; }
+.pill-pos { background:var(--green-l); color:var(--green); }
+.pill-neg { background:var(--red-l);   color:var(--red);   }
+.pill-zer { background:var(--surface2);color:var(--muted); border:1px solid var(--border); }
+
+.cmp { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
+.cmp-col { border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.cmp-hd  { padding:.42rem .9rem; font-family:'JetBrains Mono',monospace; font-size:.6rem; font-weight:600; letter-spacing:.07em; border-bottom:1px solid var(--border); }
+.hd-a { background:#eff6ff; color:var(--accent); }
+.hd-u { background:#fdf4ff; color:var(--purple); }
+.cmp-tbl { width:100%; border-collapse:collapse; }
+.cmp-tbl td { padding:.42rem .9rem; font-family:'JetBrains Mono',monospace; font-size:.72rem; border-bottom:1px solid #f1f5f9; }
+.cmp-tbl tr:last-child td { border-bottom:none; }
+.cmp-tbl tr:hover td { background:var(--surface2); }
+.td-lbl { color:var(--muted); width:44%; }
+.td-val { text-align:right; font-weight:500; }
+.td-qty { text-align:right; color:var(--muted2); font-size:.65rem; }
+.v-red  { color:var(--red); } .v-grn { color:var(--green); } .v-blu { color:var(--accent); }
+.v-nor  { color:var(--text); } .v-mute { color:var(--muted); font-size:.65rem; }
+
+.cli-section h4 { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:.6rem; }
+.cli-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:.5rem; }
+.cli-card { border:1px solid var(--border); border-radius:8px; padding:.6rem .85rem; background:var(--surface2); }
+.cli-nome { font-size:.75rem; font-weight:700; }
+.cli-cod  { font-family:'JetBrains Mono',monospace; font-size:.58rem; color:var(--muted2); }
+.cli-val  { font-family:'JetBrains Mono',monospace; font-size:.78rem; font-weight:600; color:var(--orange); margin-top:.2rem; }
+.cli-qty  { font-family:'JetBrains Mono',monospace; font-size:.62rem; color:var(--muted); }
+
+.tot-bar { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.7rem 1.1rem; display:flex; gap:2rem; flex-wrap:wrap; align-items:center; }
+.tot-item .tl { font-family:'JetBrains Mono',monospace; font-size:.58rem; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; }
+.tot-item .tv { font-family:'JetBrains Mono',monospace; font-size:.82rem; font-weight:700; margin-top:.1rem; }
+
+#telaInicial { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:70vh; gap:1.5rem; padding:2rem; text-align:center; }
+.welcome-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:3rem 3.5rem; max-width:520px; box-shadow:0 4px 24px rgba(0,0,0,.07); }
+.welcome-icon { font-size:3rem; margin-bottom:.5rem; }
+.welcome-box h2 { font-size:1.4rem; font-weight:800; margin-bottom:.5rem; }
+.welcome-box p  { font-size:.88rem; color:var(--muted); line-height:1.6; margin-bottom:1.5rem; }
+.upload-drop { border:2px dashed var(--border2); border-radius:12px; padding:2rem; cursor:pointer; transition:all .2s; background:var(--surface2); }
+.upload-drop:hover, .upload-drop.drag-over { border-color:var(--accent); background:var(--accent-l); }
+.upload-drop p { font-size:.85rem; color:var(--muted); margin-top:.5rem; }
+.upload-drop span { font-size:2rem; }
+.last-file-bar { background:var(--green-l); border:1px solid #86efac; border-radius:10px; padding:.85rem 1.2rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:.8rem; }
+.lf-info { display:flex; flex-direction:column; gap:.15rem; text-align:left; }
+.lf-label { font-size:.6rem; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:.08em; }
+.lf-name  { font-family:'JetBrains Mono',monospace; font-size:.8rem; font-weight:600; }
+.lf-date  { font-family:'JetBrains Mono',monospace; font-size:.65rem; color:var(--muted); }
+.btn-reload { font-size:.75rem; font-weight:700; padding:.4rem 1rem; border-radius:8px; background:var(--green); color:#fff; border:none; cursor:pointer; flex-shrink:0; }
+body.dragging { outline:4px dashed var(--accent); outline-offset:-8px; }
+.steps { display:flex; flex-direction:column; gap:.6rem; text-align:left; margin-top:1.2rem; }
+.step  { display:flex; gap:.75rem; align-items:flex-start; }
+.step-num { width:22px; height:22px; border-radius:50%; background:var(--accent); color:#fff; font-size:.7rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:.1rem; }
+.step p { font-size:.82rem; color:var(--muted); line-height:1.5; }
+
+@media print {
+  .action-btns,.ano-btns,.nav,.filter-row,.sm-btn,#selMes { display:none !important; }
+  header { position:static !important; box-shadow:none; }
+  body { background:#fff; }
+  .page { display:block !important; }
+  .mes-card.collapsed .mes-body { display:flex !important; }
+  .chart-wrap { height:180px; }
+  main,.conf-body { padding:.5rem; gap:.8rem; }
+  .conf-bar { position:static !important; }
+}
+@media (max-width:860px) {
+  .two-col,.cmp { grid-template-columns:1fr; }
+  main,.conf-body { padding:1rem; }
+  header,.nav,.conf-bar { padding-left:1rem; padding-right:1rem; }
+  .kpi-grid { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <h1>📊 Dashboard de Atrasos</h1>
+    <p>COMPARATIVO DIA ANTERIOR × DIA ATUAL · 2025 / 2026</p>
+  </div>
+  <div class="ano-btns" id="anoBtns">
+    <button class="ano-btn" onclick="setAno(&#39;2025&#39;,this)">2025</button>
+    <button class="ano-btn active" onclick="setAno(&#39;2026&#39;,this)">2026</button>
+  </div>
+  <div class="action-btns">
+    <button class="action-btn btn-upload" onclick="document.getElementById(&#39;uploadInput&#39;).click()">📂 Carregar Planilha</button>
+    <input type="file" id="uploadInput" accept=".xlsx,.xls" onchange="carregarPlanilha(event)">
+    <div id="headerFileBadge" style="display:none;flex-direction:column;gap:.05rem;">
+      <span style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:.6rem;color:var(--green);font-weight:700;">✓ CARREGADO</span>
+      <span id="headerFileName"></span>
+    </div>
+    <button class="action-btn btn-print" onclick="imprimirDashboard()">🖨 Imprimir</button>
+    <button class="action-btn btn-excel" onclick="exportarExcel()">📥 Exportar Excel</button>
+  </div>
+</header>
+
+<div class="nav" id="mainNav" style="display: flex;">
+  <button class="nav-btn" onclick="showPage(&#39;graficos&#39;,this)">📈 Gráficos</button>
+  <button class="nav-btn active" onclick="showPage(&#39;conferencia&#39;,this)">📋 Conferência</button>
+</div>
+
+<!-- TELA INICIAL -->
+<div id="telaInicial" style="display: none;">
+  <div class="welcome-box">
+    <div class="welcome-icon">📊</div>
+    <h2>Dashboard de Atrasos</h2>
+    <p>Carregando dados automaticamente do SharePoint...</p>
+    <div id="spStatus" style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:.8rem;color:var(--accent);margin:.5rem 0 1rem;">⚠️ Arraste o Atrasos.xlsx para atualizar</div>
+    <div class="last-file-bar" id="lastFileBar" style="display: flex;">
+      <div class="lf-info">
+        <div class="lf-label">📁 Último arquivo</div>
+        <div class="lf-name" id="lastFileName">Atrasos.xlsx</div>
+        <div class="lf-date" id="lastFileDate">Carregado em: 13/05/2026, 14:30:23</div>
+      </div>
+      <button class="btn-reload" onclick="document.getElementById(&#39;uploadInput&#39;).click()">↻ Carregar novo</button>
+    </div>
+    <div class="upload-drop" id="uploadDrop" onclick="document.getElementById(&#39;uploadInput&#39;).click()">
+      <span>📂</span>
+      <p><strong>Clique aqui</strong> ou <strong>arraste o arquivo .xlsx</strong> para qualquer lugar da tela</p>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><p>Abra o <strong>Explorador de Arquivos</strong> e vá até a pasta do OneDrive</p></div>
+      <div class="step"><div class="step-num">2</div><p><strong>Arraste o arquivo</strong> direto para esta janela do navegador</p></div>
+      <div class="step"><div class="step-num">3</div><p>Os gráficos e tabelas atualizam <strong>automaticamente</strong> ✓</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- GRAFICOS -->
+<div class="page" id="page-graficos" style="display: none;">
+  <main>
+    <div class="filter-row">
+      <span class="filter-label">Mostrar:</span>
+      <button class="filter-btn f-blue   active" onclick="toggleM(&#39;total&#39;,this)">Total</button>
+      <button class="filter-btn f-red    active" onclick="toggleM(&#39;prot&#39;,this)">Protestados</button>
+      <button class="filter-btn f-purple active" onclick="toggleM(&#39;cart&#39;,this)">Em Cartório</button>
+      <button class="filter-btn f-orange active" onclick="toggleM(&#39;prob&#39;,this)">Problemas</button>
+      <button class="filter-btn f-green  active" onclick="toggleM(&#39;rec&#39;,this)">A Receber</button>
+    </div>
+    <div class="kpi-grid" id="kpiGrid"><div class="kpi-card" style="--card-accent:#16a34a"><div class="kpi-label">Total Atual</div><div class="kpi-sub" style="color:var(--muted)">Ant: R$ 2.003.469,90</div><div class="kpi-val">R$ 1.820.939,01</div><div class="kpi-sub">938 titulos</div><div class="kpi-diff" style="color:#16a34a">▼ R$ 182.530,89</div></div><div class="kpi-card" style="--card-accent:#dc2626"><div class="kpi-label">Protestados</div><div class="kpi-sub" style="color:var(--muted)">Ant: R$ 315.569,73</div><div class="kpi-val">R$ 319.032,51</div><div class="kpi-sub">162 titulos</div><div class="kpi-diff" style="color:#dc2626">▼ R$ 3.462,78</div></div><div class="kpi-card" style="--card-accent:#dc2626"><div class="kpi-label">Em Cartorio</div><div class="kpi-sub" style="color:var(--muted)">Ant: R$ 279.557,51</div><div class="kpi-val">R$ 284.260,75</div><div class="kpi-sub">151 titulos</div><div class="kpi-diff" style="color:#dc2626">▲ R$ 4.703,24</div></div><div class="kpi-card" style="--card-accent:#16a34a"><div class="kpi-label">Problemas</div><div class="kpi-sub" style="color:var(--muted)">Ant: R$ 675.712,60</div><div class="kpi-val">R$ 675.712,60</div><div class="kpi-sub">180 titulos</div><div class="kpi-diff" style="color:#16a34a">▲ R$ 0,00</div></div><div class="kpi-card" style="--card-accent:#dc2626"><div class="kpi-label">A Receber</div><div class="kpi-sub" style="color:var(--muted)">Ant: R$ 1.012.187,57</div><div class="kpi-val">R$ 826.193,90</div><div class="kpi-sub">596 titulos</div><div class="kpi-diff" style="color:#dc2626">▼ R$ 185.993,67</div></div></div>
+    <div class="card">
+      <div class="card-title">Evolução Mensal — Valores (R$)</div>
+      <div class="card-subtitle">Linha sólida = Dia anterior · Linha tracejada = Dia atual</div>
+      <div class="chart-wrap"><canvas id="cValor" width="1794" height="280" style="display: block; box-sizing: border-box; height: 280px; width: 1794px;"></canvas></div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Quantidade de Títulos</div>
+        <div class="card-subtitle">Anterior vs. Atual por mês</div>
+        <div class="chart-wrap"><canvas id="cQtd" width="864" height="280" style="display: block; box-sizing: border-box; height: 280px; width: 864px;"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Variação Atual − Anterior (R$)</div>
+        <div class="card-subtitle">Positivo = aumentou · Negativo = reduziu</div>
+        <div class="chart-wrap"><canvas id="cDiff" width="864" height="280" style="display: block; box-sizing: border-box; height: 280px; width: 864px;"></canvas></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- CONFERENCIA -->
+<div class="page" id="page-conferencia" style="display: block;">
+  <div class="conf-bar">
+    <h2>📋 Conferência de Dados</h2>
+    <select class="sel" id="selMes" onchange="renderConf()"><option value="todos">Todos os meses</option><option value="Janeiro">Janeiro</option><option value="Fevereiro">Fevereiro</option><option value="Março">Março</option><option value="Abril">Abril</option><option value="Maio">Maio</option><option value="Junho">Junho</option><option value="Julho">Julho</option><option value="Agosto">Agosto</option><option value="Setembro">Setembro</option><option value="Outubro">Outubro</option><option value="Novembro">Novembro</option><option value="Dezembro">Dezembro</option></select>
+    <button class="sm-btn" onclick="expandAll()">Expandir todos</button>
+    <button class="sm-btn" onclick="collapseAll()">Recolher todos</button>
+  </div>
+  <div class="conf-body" id="confBody"><div class="mes-card" id="mcJaneiro"><div class="mes-hd" onclick="tog(&#39;mcJaneiro&#39;)"><h3>Janeiro <span style="font-size:.68rem;font-weight:500;color:var(--muted)">2026</span></h3><div class="mes-hd-r"><span class="tag tag-blue">R$ 120.6k · 62 tit.</span><span class="tag tag-red">Prot. R$ 108.405,39</span><span class="tag tag-orange">Prob. R$ 12.225,96</span><span class="chevron">▼</span></div></div><div class="mes-body"><div class="diff-row"><span class="pill pill-zer">Total: sem alteracao</span><span class="pill pill-zer">Protestados: sem alteracao</span><span class="pill pill-zer">Em Cartorio: sem alteracao</span><span class="pill pill-zer">Problemas: sem alteracao</span><span class="pill pill-zer">A Receber: sem alteracao</span></div><div class="cmp"><div class="cmp-col"><div class="cmp-hd hd-a">◀ DIA ANTERIOR</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 120.631,35</td><td class="td-qty">62 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 108.405,39</td><td class="td-qty">58 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 12.225,96</td><td class="td-qty">4 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div><div class="cmp-col"><div class="cmp-hd hd-u">▶ DIA ATUAL</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 120.631,35</td><td class="td-qty">62 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 108.405,39</td><td class="td-qty">58 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 12.225,96</td><td class="td-qty">4 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div></div><div class="tot-bar"><div class="tot-item"><div class="tl">Carteira Total</div><div class="tv" style="color:var(--accent)">R$ 8.516.946,89</div></div><div class="tot-item"><div class="tl">% Atraso / Carteira</div><div class="tv" style="color:var(--red)">1.42%</div></div><div class="tot-item"><div class="tl">% Protestados</div><div class="tv" style="color:var(--red)">1.27%</div></div></div></div></div><div class="mes-card" id="mcFevereiro"><div class="mes-hd" onclick="tog(&#39;mcFevereiro&#39;)"><h3>Fevereiro <span style="font-size:.68rem;font-weight:500;color:var(--muted)">2026</span></h3><div class="mes-hd-r"><span class="tag tag-blue">R$ 72.8k · 35 tit.</span><span class="tag tag-red">Prot. R$ 48.743,13</span><span class="tag tag-orange">Prob. R$ 24.066,71</span><span class="chevron">▼</span></div></div><div class="mes-body"><div class="diff-row"><span class="pill pill-zer">Total: sem alteracao</span><span class="pill pill-zer">Protestados: sem alteracao</span><span class="pill pill-zer">Em Cartorio: sem alteracao</span><span class="pill pill-zer">Problemas: sem alteracao</span><span class="pill pill-zer">A Receber: sem alteracao</span></div><div class="cmp"><div class="cmp-col"><div class="cmp-hd hd-a">◀ DIA ANTERIOR</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 72.809,84</td><td class="td-qty">35 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 48.743,13</td><td class="td-qty">30 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 24.066,71</td><td class="td-qty">5 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div><div class="cmp-col"><div class="cmp-hd hd-u">▶ DIA ATUAL</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 72.809,84</td><td class="td-qty">35 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 48.743,13</td><td class="td-qty">30 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 24.066,71</td><td class="td-qty">5 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div></div><div class="tot-bar"><div class="tot-item"><div class="tl">Carteira Total</div><div class="tv" style="color:var(--accent)">R$ 8.350.328,18</div></div><div class="tot-item"><div class="tl">% Atraso / Carteira</div><div class="tv" style="color:var(--red)">0.87%</div></div><div class="tot-item"><div class="tl">% Protestados</div><div class="tv" style="color:var(--red)">0.58%</div></div></div></div></div><div class="mes-card" id="mcMarço"><div class="mes-hd" onclick="tog(&#39;mcMarço&#39;)"><h3>Março <span style="font-size:.68rem;font-weight:500;color:var(--muted)">2026</span></h3><div class="mes-hd-r"><span class="tag tag-blue">R$ 123.5k · 90 tit.</span><span class="tag tag-red">Prot. R$ 32.465,24</span><span class="tag tag-orange">Prob. R$ 57.881,24</span><span class="tag tag-green">Rec. R$ 33.185,76</span><span class="chevron">▼</span></div></div><div class="mes-body"><div class="diff-row"><span class="pill pill-neg">Total: ▼ R$ 4.534,00</span><span class="pill pill-pos">Protestados: ▲ +R$ 1.641,00</span><span class="pill pill-zer">Em Cartorio: sem alteracao</span><span class="pill pill-zer">Problemas: sem alteracao</span><span class="pill pill-neg">A Receber: ▼ R$ 2.893,00</span></div><div class="cmp"><div class="cmp-col"><div class="cmp-hd hd-a">◀ DIA ANTERIOR</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 128.066,24</td><td class="td-qty">96 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 34.106,24</td><td class="td-qty">32 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 57.881,24</td><td class="td-qty">13 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 36.078,76</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 36.078,76</td><td class="td-qty">51 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div><div class="cmp-col"><div class="cmp-hd hd-u">▶ DIA ATUAL</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 123.532,24</td><td class="td-qty">90 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 32.465,24</td><td class="td-qty">30 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 57.881,24</td><td class="td-qty">13 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 33.185,76</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 33.185,76</td><td class="td-qty">47 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div></div><div class="tot-bar"><div class="tot-item"><div class="tl">Carteira Total</div><div class="tv" style="color:var(--accent)">R$ 8.960.749,50</div></div><div class="tot-item"><div class="tl">% Atraso / Carteira</div><div class="tv" style="color:var(--red)">1.38%</div></div><div class="tot-item"><div class="tl">% Protestados</div><div class="tv" style="color:var(--red)">0.36%</div></div><div class="tot-item"><div class="tl">% A Receber</div><div class="tv" style="color:var(--green)">0.37%</div></div></div></div></div><div class="mes-card" id="mcAbril"><div class="mes-hd" onclick="tog(&#39;mcAbril&#39;)"><h3>Abril <span style="font-size:.68rem;font-weight:500;color:var(--muted)">2026</span></h3><div class="mes-hd-r"><span class="tag tag-blue">R$ 763.8k · 310 tit.</span><span class="tag tag-red">Prot. R$ 129.418,75</span><span class="tag tag-purple">Cart. R$ 73.087,51</span><span class="tag tag-orange">Prob. R$ 467.717,54</span><span class="tag tag-green">Rec. R$ 166.690,28</span><span class="chevron">▼</span></div></div><div class="mes-body"><div class="diff-row"><span class="pill pill-neg">Total: ▼ R$ 8.583,06</span><span class="pill pill-neg">Protestados: ▼ R$ 5.103,78</span><span class="pill pill-neg">Em Cartorio: ▼ R$ 13.133,84</span><span class="pill pill-zer">Problemas: sem alteracao</span><span class="pill pill-neg">A Receber: ▼ R$ 13.686,84</span></div><div class="cmp"><div class="cmp-col"><div class="cmp-hd hd-a">◀ DIA ANTERIOR</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 772.409,63</td><td class="td-qty">319 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 124.314,97</td><td class="td-qty">43 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-red">R$ 86.221,35</td><td class="td-qty">36 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 467.717,54</td><td class="td-qty">126 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 90.618,03</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 180.377,12</td><td class="td-qty">150 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div><div class="cmp-col"><div class="cmp-hd hd-u">▶ DIA ATUAL</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 763.826,57</td><td class="td-qty">310 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 129.418,75</td><td class="td-qty">44 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-red">R$ 73.087,51</td><td class="td-qty">28 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 467.717,54</td><td class="td-qty">126 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 90.065,03</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 166.690,28</td><td class="td-qty">140 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div></div><div class="tot-bar"><div class="tot-item"><div class="tl">Carteira Total</div><div class="tv" style="color:var(--accent)">R$ 10.738.433,96</div></div><div class="tot-item"><div class="tl">% Atraso / Carteira</div><div class="tv" style="color:var(--red)">7.11%</div></div><div class="tot-item"><div class="tl">% Protestados</div><div class="tv" style="color:var(--red)">1.21%</div></div><div class="tot-item"><div class="tl">% Em Cartorio</div><div class="tv" style="color:var(--purple)">0.68%</div></div><div class="tot-item"><div class="tl">% A Receber</div><div class="tv" style="color:var(--green)">1.55%</div></div></div></div></div><div class="mes-card" id="mcMaio"><div class="mes-hd" onclick="tog(&#39;mcMaio&#39;)"><h3>Maio <span style="font-size:.68rem;font-weight:500;color:var(--muted)">2026</span></h3><div class="mes-hd-r"><span class="tag tag-blue">R$ 740.1k · 441 tit.</span><span class="tag tag-purple">Cart. R$ 211.173,24</span><span class="tag tag-orange">Prob. R$ 113.821,15</span><span class="tag tag-green">Rec. R$ 626.317,86</span><span class="chevron">▼</span></div></div><div class="mes-body"><div class="diff-row"><span class="pill pill-neg">Total: ▼ R$ 169.413,83</span><span class="pill pill-zer">Protestados: sem alteracao</span><span class="pill pill-pos">Em Cartorio: ▲ +R$ 17.837,08</span><span class="pill pill-zer">Problemas: sem alteracao</span><span class="pill pill-neg">A Receber: ▼ R$ 169.413,83</span></div><div class="cmp"><div class="cmp-col"><div class="cmp-hd hd-a">◀ DIA ANTERIOR</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 909.552,84</td><td class="td-qty">492 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-red">R$ 193.336,16</td><td class="td-qty">116 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 113.821,15</td><td class="td-qty">32 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 74.159,33</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 795.731,69</td><td class="td-qty">460 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div><div class="cmp-col"><div class="cmp-hd hd-u">▶ DIA ATUAL</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 740.139,01</td><td class="td-qty">441 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-red">R$ 211.173,24</td><td class="td-qty">123 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 113.821,15</td><td class="td-qty">32 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 79.831,75</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 626.317,86</td><td class="td-qty">409 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div></div><div class="tot-bar"><div class="tot-item"><div class="tl">Carteira Total</div><div class="tv" style="color:var(--accent)">R$ 6.605.121,80</div></div><div class="tot-item"><div class="tl">% Atraso / Carteira</div><div class="tv" style="color:var(--red)">11.21%</div></div><div class="tot-item"><div class="tl">% Protestados</div><div class="tv" style="color:var(--red)">0.00%</div></div><div class="tot-item"><div class="tl">% Em Cartorio</div><div class="tv" style="color:var(--purple)">3.20%</div></div><div class="tot-item"><div class="tl">% A Receber</div><div class="tv" style="color:var(--green)">9.48%</div></div></div></div></div><div class="mes-card" id="mcJunho"><div class="mes-hd" onclick="tog(&#39;mcJunho&#39;)"><h3>Junho <span style="font-size:.68rem;font-weight:500;color:var(--muted)">2026</span></h3><div class="mes-hd-r"><span class="tag tag-gray">Sem dados</span><span class="chevron">▼</span></div></div><div class="mes-body"><div class="diff-row"><span class="pill pill-zer">Total: sem alteracao</span><span class="pill pill-zer">Protestados: sem alteracao</span><span class="pill pill-zer">Em Cartorio: sem alteracao</span><span class="pill pill-zer">Problemas: sem alteracao</span><span class="pill pill-zer">A Receber: sem alteracao</span></div><div class="cmp"><div class="cmp-col"><div class="cmp-hd hd-a">◀ DIA ANTERIOR</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div><div class="cmp-col"><div class="cmp-hd hd-u">▶ DIA ATUAL</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div></div></div></div><div class="mes-card" id="mcJulho"><div class="mes-hd" onclick="tog(&#39;mcJulho&#39;)"><h3>Julho <span style="font-size:.68rem;font-weight:500;color:var(--muted)">2026</span></h3><div class="mes-hd-r"><span class="tag tag-gray">Sem dados</span><span class="chevron">▼</span></div></div><div class="mes-body"><div class="diff-row"><span class="pill pill-zer">Total: sem alteracao</span><span class="pill pill-zer">Protestados: sem alteracao</span><span class="pill pill-zer">Em Cartorio: sem alteracao</span><span class="pill pill-zer">Problemas: sem alteracao</span><span class="pill pill-zer">A Receber: sem alteracao</span></div><div class="cmp"><div class="cmp-col"><div class="cmp-hd hd-a">◀ DIA ANTERIOR</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div><div class="cmp-col"><div class="cmp-hd hd-u">▶ DIA ATUAL</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div></div></div></div><div class="mes-card" id="mcAgosto"><div class="mes-hd" onclick="tog(&#39;mcAgosto&#39;)"><h3>Agosto <span style="font-size:.68rem;font-weight:500;color:var(--muted)">2026</span></h3><div class="mes-hd-r"><span class="tag tag-gray">Sem dados</span><span class="chevron">▼</span></div></div><div class="mes-body"><div class="diff-row"><span class="pill pill-zer">Total: sem alteracao</span><span class="pill pill-zer">Protestados: sem alteracao</span><span class="pill pill-zer">Em Cartorio: sem alteracao</span><span class="pill pill-zer">Problemas: sem alteracao</span><span class="pill pill-zer">A Receber: sem alteracao</span></div><div class="cmp"><div class="cmp-col"><div class="cmp-hd hd-a">◀ DIA ANTERIOR</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div><div class="cmp-col"><div class="cmp-hd hd-u">▶ DIA ATUAL</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div></div></div></div><div class="mes-card" id="mcSetembro"><div class="mes-hd" onclick="tog(&#39;mcSetembro&#39;)"><h3>Setembro <span style="font-size:.68rem;font-weight:500;color:var(--muted)">2026</span></h3><div class="mes-hd-r"><span class="tag tag-gray">Sem dados</span><span class="chevron">▼</span></div></div><div class="mes-body"><div class="diff-row"><span class="pill pill-zer">Total: sem alteracao</span><span class="pill pill-zer">Protestados: sem alteracao</span><span class="pill pill-zer">Em Cartorio: sem alteracao</span><span class="pill pill-zer">Problemas: sem alteracao</span><span class="pill pill-zer">A Receber: sem alteracao</span></div><div class="cmp"><div class="cmp-col"><div class="cmp-hd hd-a">◀ DIA ANTERIOR</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div><div class="cmp-col"><div class="cmp-hd hd-u">▶ DIA ATUAL</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div></div></div></div><div class="mes-card" id="mcOutubro"><div class="mes-hd" onclick="tog(&#39;mcOutubro&#39;)"><h3>Outubro <span style="font-size:.68rem;font-weight:500;color:var(--muted)">2026</span></h3><div class="mes-hd-r"><span class="tag tag-gray">Sem dados</span><span class="chevron">▼</span></div></div><div class="mes-body"><div class="diff-row"><span class="pill pill-zer">Total: sem alteracao</span><span class="pill pill-zer">Protestados: sem alteracao</span><span class="pill pill-zer">Em Cartorio: sem alteracao</span><span class="pill pill-zer">Problemas: sem alteracao</span><span class="pill pill-zer">A Receber: sem alteracao</span></div><div class="cmp"><div class="cmp-col"><div class="cmp-hd hd-a">◀ DIA ANTERIOR</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div><div class="cmp-col"><div class="cmp-hd hd-u">▶ DIA ATUAL</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div></div></div></div><div class="mes-card" id="mcNovembro"><div class="mes-hd" onclick="tog(&#39;mcNovembro&#39;)"><h3>Novembro <span style="font-size:.68rem;font-weight:500;color:var(--muted)">2026</span></h3><div class="mes-hd-r"><span class="tag tag-gray">Sem dados</span><span class="chevron">▼</span></div></div><div class="mes-body"><div class="diff-row"><span class="pill pill-zer">Total: sem alteracao</span><span class="pill pill-zer">Protestados: sem alteracao</span><span class="pill pill-zer">Em Cartorio: sem alteracao</span><span class="pill pill-zer">Problemas: sem alteracao</span><span class="pill pill-zer">A Receber: sem alteracao</span></div><div class="cmp"><div class="cmp-col"><div class="cmp-hd hd-a">◀ DIA ANTERIOR</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div><div class="cmp-col"><div class="cmp-hd hd-u">▶ DIA ATUAL</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div></div></div></div><div class="mes-card" id="mcDezembro"><div class="mes-hd" onclick="tog(&#39;mcDezembro&#39;)"><h3>Dezembro <span style="font-size:.68rem;font-weight:500;color:var(--muted)">2026</span></h3><div class="mes-hd-r"><span class="tag tag-gray">Sem dados</span><span class="chevron">▼</span></div></div><div class="mes-body"><div class="diff-row"><span class="pill pill-zer">Total: sem alteracao</span><span class="pill pill-zer">Protestados: sem alteracao</span><span class="pill pill-zer">Em Cartorio: sem alteracao</span><span class="pill pill-zer">Problemas: sem alteracao</span><span class="pill pill-zer">A Receber: sem alteracao</span></div><div class="cmp"><div class="cmp-col"><div class="cmp-hd hd-a">◀ DIA ANTERIOR</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div><div class="cmp-col"><div class="cmp-hd hd-u">▶ DIA ATUAL</div><table class="cmp-tbl"><tbody><tr><td class="td-lbl">Total bruto</td><td class="td-val v-blu">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Protestados</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Em Cartorio</td><td class="td-val v-nor">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Problemas</td><td class="td-val v-red">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">CenterKey</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty"></td></tr><tr><td class="td-lbl">A Receber</td><td class="td-val v-grn">R$ 0,00</td><td class="td-qty">0 tit.</td></tr><tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">Em Cartorio</td></tr></tbody></table></div></div></div></div></div>
+
+  <!-- TOTAIS GERAIS -->
+  <div id="totaisGerais" style="display: block; padding: 1.4rem 2rem 2rem;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.4rem 1.6rem;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+      <div style="font-size:.78rem;font-weight:800;color:var(--text);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;">
+        🏠 Resumo Geral da Carteira — <span id="totaisAno" style="color:var(--accent)">2026</span>
+      </div>
+      <div id="totaisGeraisGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.8rem;"><div style="background:var(--accent-l);border:1px solid;border-color:#2563eb40;border-left:4px solid var(--accent);border-radius:10px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.25rem;"><div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);">Soma das Carteiras</div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:1.25rem;font-weight:800;color:var(--accent);">R$ 43.171.580,33</div></div><div style="background:var(--red-l);border:1px solid;border-color:var(--red)40;border-left:4px solid var(--red);border-radius:10px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.25rem;"><div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--red);">Total Atraso</div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:.65rem;color:var(--muted);">Ant: R$ 2.003.469,90</div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:1.05rem;font-weight:800;color:var(--green);">R$ 1.820.939,01 <span style="font-size:.75rem;color:var(--green);">▼ R$ 182.530,89</span></div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:.7rem;color:var(--red);opacity:.8;">4.22% da carteira</div></div><div style="background:var(--red-l);border:1px solid;border-color:var(--red)40;border-left:4px solid var(--red);border-radius:10px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.25rem;"><div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--red);">Protestados</div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:.65rem;color:var(--muted);">Ant: R$ 315.569,73</div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:1.05rem;font-weight:800;color:var(--red);">R$ 319.032,51 <span style="font-size:.75rem;color:var(--red);">▲ R$ 3.462,78</span></div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:.7rem;color:var(--red);opacity:.8;">0.74% da carteira</div></div><div style="background:var(--accent-l);border:1px solid;border-color:var(--accent)40;border-left:4px solid var(--accent);border-radius:10px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.25rem;"><div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);">Center</div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:.65rem;color:var(--muted);">Ant: R$ 200.856,12</div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:1.05rem;font-weight:800;color:var(--green);">R$ 203.082,54 <span style="font-size:.75rem;color:var(--green);">▲ R$ 2.226,42</span></div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:.7rem;color:var(--accent);opacity:.8;">0.47% da carteira</div></div><div style="background:var(--orange-l);border:1px solid;border-color:var(--orange)40;border-left:4px solid var(--orange);border-radius:10px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.25rem;"><div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--orange);">Problemas</div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:.65rem;color:var(--muted);">Ant: R$ 675.712,60</div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:1.05rem;font-weight:800;color:var(--green);">R$ 675.712,60 <span style="font-size:.75rem;color:var(--green);">▲ R$ 0,00</span></div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:.7rem;color:var(--orange);opacity:.8;">1.57% da carteira</div></div><div style="background:var(--purple-l);border:1px solid;border-color:var(--purple)40;border-left:4px solid var(--purple);border-radius:10px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.25rem;"><div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--purple);">Em Cartorio</div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:.65rem;color:var(--muted);">Ant: R$ 279.557,51</div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:1.05rem;font-weight:800;color:var(--red);">R$ 284.260,75 <span style="font-size:.75rem;color:var(--red);">▲ R$ 4.703,24</span></div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:.7rem;color:var(--purple);opacity:.8;">0.66% da carteira</div></div><div style="background:var(--green-l);border:1px solid;border-color:var(--green)40;border-left:4px solid var(--green);border-radius:10px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.25rem;"><div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--green);">A Receber</div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:.65rem;color:var(--muted);">Ant: R$ 1.012.187,57</div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:1.05rem;font-weight:800;color:var(--red);">R$ 826.193,90 <span style="font-size:.75rem;color:var(--red);">▼ R$ 185.993,67</span></div><div style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:.7rem;color:var(--green);opacity:.8;">1.91% da carteira</div></div></div>
+    </div>
+  </div>
+
+<script>
+// ======= DADOS =======
+var DB = {
+  '2025': [
+    {mes:'Janeiro',   carteira:9553200.73,  ant:{tot:422361.66,qty:211,prot:-266840.17,pQty:143,cart:-139664.09,cQty:61, prob:-15857.40,bQty:7,  ck:0,    rec:0,         rQty:0,  descP:'BJ, Azul, CP',        descC:'SUS, BCO, LP'},    atu:{tot:420895,    qty:209,prot:-265373.51,pQty:141,cart:-139664.09,cQty:61, prob:-15857.40,bQty:7,  ck:0,    rec:0,         rQty:0,  descP:'BJ, Azul, CP',        descC:'SUS, BCO, LP'},    cliAtu:[{cod:344695,nome:'Azul',val:0,qty:0,obs:'protestado'},{cod:333990,nome:'BJ',val:0,qty:0,obs:'protestado'},{cod:320548,nome:'CP',val:0,qty:0,obs:'protestado'},{cod:null,nome:'BCO',val:134803.06,qty:59,obs:''},{cod:null,nome:'EM',val:9539.90,qty:5,obs:''},{cod:null,nome:'LP',val:4861.03,qty:2,obs:''},{cod:null,nome:'RTC',val:6317.50,qty:2,obs:''}]},
+    {mes:'Fevereiro', carteira:9020956.07,  ant:{tot:281074.06,qty:126,prot:-67652.15, pQty:32, cart:0,          cQty:0,  prob:-213421.91,bQty:94, ck:0,    rec:0,         rQty:0,  descP:'Azul, BJ, CP',        descC:'--'},              atu:{tot:278616.83, qty:122,prot:-65194.92, pQty:28, cart:0,          cQty:0,  prob:-213421.91,bQty:94, ck:0,    rec:0,         rQty:0,  descP:'Azul, BJ, CP',        descC:'--'},              cliAtu:[{cod:333990,nome:'BJ',val:63708.68,qty:22,obs:''}]},
+    {mes:'Marco',     carteira:10344981.64, ant:{tot:182211.23,qty:60, prot:-112227.55,pQty:38, cart:0,          cQty:0,  prob:-69983.68, bQty:22, ck:0,    rec:0,         rQty:0,  descP:'BJ, JMI, TWD',        descC:'--'},              atu:{tot:182211.23, qty:60, prot:-112227.55,pQty:38, cart:0,          cQty:0,  prob:-69983.68, bQty:22, ck:0,    rec:0,         rQty:0,  descP:'BJ, JMI, TWD',        descC:'--'},              cliAtu:[{cod:null,nome:'BCO',val:69983.68,qty:22,obs:'em cartorio'}]},
+    {mes:'Abril',     carteira:10561858.15, ant:{tot:206822.11,qty:56, prot:-180312.27,pQty:42, cart:0,          cQty:0,  prob:-26509.84, bQty:14, ck:0,    rec:0,         rQty:0,  descP:'BCO',                 descC:'--'},              atu:{tot:206822.11, qty:56, prot:-180312.27,pQty:42, cart:0,          cQty:0,  prob:-26509.84, bQty:14, ck:0,    rec:0,         rQty:0,  descP:'BCO',                 descC:'--'},              cliAtu:[{cod:null,nome:'BCO',val:26509.84,qty:14,obs:''}]},
+    {mes:'Maio',      carteira:9117706.54,  ant:{tot:107756.03,qty:41, prot:-91384.10, pQty:31, cart:0,          cQty:0,  prob:-16371.93, bQty:10, ck:0,    rec:0,         rQty:0,  descP:'Problemas',           descC:'--'},              atu:{tot:104039.36, qty:39, prot:-87667.43, pQty:29, cart:0,          cQty:0,  prob:-16371.93, bQty:10, ck:0,    rec:0,         rQty:0,  descP:'Problemas',           descC:'--'},              cliAtu:[{cod:343080,nome:'CRM',val:3437.50,qty:5,obs:''},{cod:352581,nome:'M M Inox',val:9167.43,qty:3,obs:''},{cod:347795,nome:'NSA',val:3767,qty:2,obs:''}]},
+    {mes:'Junho',     carteira:9067085.71,  ant:{tot:186460.49,qty:38, prot:-175015.87,pQty:32, cart:0,          cQty:0,  prob:-11444.62, bQty:6,  ck:0,    rec:0,         rQty:0,  descP:'Problemas',           descC:'--'},              atu:{tot:179279.15, qty:33, prot:-167834.53,pQty:27, cart:0,          cQty:0,  prob:-11444.62, bQty:6,  ck:0,    rec:0,         rQty:0,  descP:'Problemas',           descC:'--'},              cliAtu:[{cod:343080,nome:'CRM',val:695,qty:1,obs:''},{cod:356373,nome:'Hubsage',val:3267.66,qty:2,obs:''},{cod:352581,nome:'M M Inox',val:6417.34,qty:2,obs:''},{cod:356057,nome:'Chama',val:1064.62,qty:1,obs:''}]},
+    {mes:'Julho',     carteira:9348940.97,  ant:{tot:136965.49,qty:40, prot:-136097.82,pQty:39, cart:0,          cQty:0,  prob:-867.67,   bQty:1,  ck:0,    rec:0,         rQty:0,  descP:'Hubsage',             descC:'--'},              atu:{tot:127600.70, qty:33, prot:-126733.03,pQty:32, cart:0,          cQty:0,  prob:-867.67,   bQty:1,  ck:0,    rec:0,         rQty:0,  descP:'Hubsage',             descC:'--'},              cliAtu:[{cod:356373,nome:'Hubsage',val:867.67,qty:1,obs:''}]},
+    {mes:'Agosto',    carteira:8946447.57,  ant:{tot:119706.70,qty:38, prot:-116912.04,pQty:35, cart:0,          cQty:0,  prob:-2794.66,  bQty:3,  ck:0,    rec:0,         rQty:0,  descP:'Loide, Hubsage, RTC', descC:'--'},              atu:{tot:119706.70, qty:38, prot:-116912.04,pQty:35, cart:0,          cQty:0,  prob:-2794.66,  bQty:3,  ck:0,    rec:0,         rQty:0,  descP:'Loide, Hubsage, RTC', descC:'--'},              cliAtu:[{cod:355804,nome:'Loide',val:994.66,qty:1,obs:''},{cod:356373,nome:'Hubsage',val:867.67,qty:1,obs:''},{cod:null,nome:'RTC',val:932.33,qty:1,obs:''}]},
+    {mes:'Setembro',  carteira:9547070.56,  ant:{tot:52028.50, qty:31, prot:-43750.50, pQty:28, cart:0,          cQty:0,  prob:-7400,     bQty:1,  ck:0,    rec:878,       rQty:2,  descP:'Problemas',           descC:'--'},              atu:{tot:46677.82,  qty:27, prot:-39277.82, pQty:26, cart:0,          cQty:0,  prob:-7400,     bQty:1,  ck:0,    rec:0,         rQty:0,  descP:'Problemas',           descC:'--'},              cliAtu:[]},
+    {mes:'Outubro',   carteira:10546895.80, ant:{tot:103202.39,qty:39, prot:-71228.06, pQty:30, cart:0,          cQty:0,  prob:-30344.33, bQty:6,  ck:0,    rec:1630,      rQty:3,  descP:'Problemas',           descC:'--'},              atu:{tot:94984.71,  qty:34, prot:-64640.38, pQty:28, cart:0,          cQty:0,  prob:-30344.33, bQty:6,  ck:0,    rec:0,         rQty:0,  descP:'Problemas',           descC:'--'},              cliAtu:[]},
+    {mes:'Novembro',  carteira:9861595.06,  ant:{tot:133334.03,qty:47, prot:-128694.53,pQty:44, cart:0,          cQty:0,  prob:-3837.50,  bQty:2,  ck:802,  rec:1604,      rQty:1,  descP:'Problemas',           descC:'--'},              atu:{tot:116240.09, qty:41, prot:-112402.59,pQty:39, cart:0,          cQty:0,  prob:-3837.50,  bQty:2,  ck:802,  rec:802,       rQty:1,  descP:'Problemas',           descC:'--'},              cliAtu:[]},
+    {mes:'Dezembro',  carteira:10590597.59, ant:{tot:174274.28,qty:81, prot:-173555.28,pQty:80, cart:0,          cQty:0,  prob:0,         bQty:0,  ck:719,  rec:1438,      rQty:1,  descP:'--',                  descC:'--'},              atu:{tot:159357.90, qty:70, prot:-159357.90,pQty:70, cart:0,          cQty:0,  prob:0,         bQty:0,  ck:0,    rec:0,         rQty:0,  descP:'--',                  descC:'--'},              cliAtu:[]}
+  ],
+  '2026': [
+    {mes:'Janeiro',   carteira:8516946.89,  ant:{tot:120631.35,qty:62, prot:-108405.39,pQty:58, cart:0,          cQty:0,  prob:-12225.96, bQty:4,  ck:0,    rec:0,         rQty:0,  descP:'Problemas',           descC:'--'},              atu:{tot:120631.35, qty:62, prot:-108405.39,pQty:58, cart:0,          cQty:0,  prob:-12225.96, bQty:4,  ck:0,    rec:0,         rQty:0,  descP:'Problemas',           descC:'--'},              cliAtu:[]},
+    {mes:'Fevereiro', carteira:8350328.18,  ant:{tot:72809.84, qty:35, prot:-48743.13, pQty:30, cart:0,          cQty:0,  prob:-24066.71, bQty:5,  ck:0,    rec:0,         rQty:0,  descP:'Problemas',           descC:'--'},              atu:{tot:72809.84,  qty:35, prot:-48743.13, pQty:30, cart:0,          cQty:0,  prob:-24066.71, bQty:5,  ck:0,    rec:0,         rQty:0,  descP:'Problemas',           descC:'--'},              cliAtu:[]},
+    {mes:'Marco',     carteira:8960749.50,  ant:{tot:151313.46,qty:126,prot:-35021.46, pQty:33, cart:0,          cQty:0,  prob:-26586.89, bQty:8,  ck:58410.76,rec:174702.76,rQty:85, descP:'Problemas',           descC:'--'},              atu:{tot:143267.66, qty:115,prot:-35021.46, pQty:33, cart:0,          cQty:0,  prob:-57881.24, bQty:15, ck:50364.96,rec:158611.16,rQty:67, descP:'Problemas',           descC:'--'},              cliAtu:[{cod:325449,nome:'HOSONIC',val:31294.35,qty:7,obs:'diferenca no periodo'}]},
+    {mes:'Abril',     carteira:10738433.96, ant:{tot:904029.95,qty:400,prot:-95146.93, pQty:36, cart:182969.59,  cQty:86, prob:-467717.54,bQty:126,ck:100535.74,rec:624670.81,rQty:238,descP:'HOSONIC',             descC:'Em cartorio'},     atu:{tot:879339.45, qty:384,prot:-102946.04,pQty:42, cart:156304,     cQty:72, prob:-467717.54,bQty:126,ck:94711.72,rec:559691.59,rQty:216,descP:'HOSONIC',             descC:'Em cartorio'},     cliAtu:[{cod:325449,nome:'HOSONIC',val:467717.54,qty:126,obs:'principal inadimplente'}]},
+    {mes:'Maio',      carteira:3712224.15,  ant:{tot:418987.66,qty:260,prot:0,         pQty:0,  cart:0,          cQty:0,  prob:-67373.77, bQty:19, ck:38428.82,rec:390042.71,rQty:241,descP:'HOSONIC',             descC:'--'},              atu:{tot:526246.41, qty:365,prot:0,         pQty:0,  cart:0,          cQty:0,  prob:-75070.06, bQty:21, ck:49041.05,rec:507913.69,rQty:344,descP:'HOSONIC',             descC:'--'},              cliAtu:[{cod:325449,nome:'HOSONIC',val:75070.06,qty:21,obs:''}]},
+    {mes:'Junho',     carteira:0,           ant:{tot:0,qty:0,prot:0,pQty:0,cart:0,cQty:0,prob:0,bQty:0,ck:0,rec:0,rQty:0,descP:'--',descC:'--'},  atu:{tot:0,qty:0,prot:0,pQty:0,cart:0,cQty:0,prob:0,bQty:0,ck:0,rec:0,rQty:0,descP:'--',descC:'--'},  cliAtu:[]}
+  ]
+};
+
+// Resumo consolidado 2026 (lido das linhas finais da planilha)
+DB['2026'].resumo = {
+  totA:  1594962.42, totU:  1669484.87,
+  protA: -287316.91, protU: -295116.02,
+  cartA:  182969.59, cartU:  156304,
+  probA: -597970.87, probU: -636961.51,
+  recA:   782484.48, recU:   810217.18,
+};
+
+// ======= STATE =======
+var ANO = '2026';
+var SHOW = {total:true, prot:true, cart:true, prob:true, rec:true};
+var CV=null, CQ=null, CD=null;
+
+var PALETTE = {
+  total:{solid:'#2563eb',faded:'#93c5fd'},
+  prot: {solid:'#dc2626',faded:'#fca5a5'},
+  cart: {solid:'#7c3aed',faded:'#c4b5fd'},
+  prob: {solid:'#ea580c',faded:'#fdba74'},
+  rec:  {solid:'#16a34a',faded:'#86efac'}
+};
+var NAMES = {total:'Total',prot:'Protestados',cart:'Em Cartorio',prob:'Problemas',rec:'A Receber'};
+
+function R(v) { return v==null ? '--' : 'R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2}); }
+function PCT(num,den) { return den>0 ? ((Math.abs(num)/den)*100).toFixed(2)+'%' : '--'; }
+
+// ======= NAVEGACAO =======
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(function(p){ p.style.display='none'; });
+  document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('page-'+id).style.display = 'block';
+  btn.classList.add('active');
+  if(id==='conferencia'){ populateSel(); renderConf(); }
+}
+
+function setAno(a, btn) {
+  ANO = a;
+  document.querySelectorAll('#anoBtns .ano-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderAll(); populateSel(); renderConf();
+}
+
+function toggleM(k, btn) {
+  SHOW[k] = !SHOW[k];
+  btn.classList.toggle('active', SHOW[k]);
+  renderCharts();
+}
+
+// ======= KPI =======
+function renderKPI() {
+  var ds = DB[ANO].filter(function(d){ return d.ant.tot>0||d.atu.tot>0; });
+  var sA=0,sU=0,sPrA=0,sPrU=0,sCaA=0,sCaU=0,sPbA=0,sPbU=0,sRecA=0,sRecU=0;
+  var qA=0,qU=0,qPrU=0,qCaU=0,qPbU=0,qRecU=0;
+  ds.forEach(function(d){
+    sA+=d.ant.tot; sU+=d.atu.tot;
+    sPrA+=d.ant.prot; sPrU+=d.atu.prot;
+    sCaA+=d.ant.cart; sCaU+=d.atu.cart;
+    sPbA+=d.ant.prob; sPbU+=d.atu.prob;
+    sRecA+=d.ant.rec;  sRecU+=d.atu.rec;
+    qA+=d.ant.qty; qU+=d.atu.qty;
+    qPrU+=d.atu.pQty; qCaU+=(d.atu.cQty||0); qPbU+=d.atu.bQty; qRecU+=d.atu.rQty;
+  });
+
+  // Para 2026 usa valores consolidados da planilha (linhas de resumo)
+  if(ANO==='2026' && DB['2026'].resumo) {
+    var r = DB['2026'].resumo;
+    sA=r.totA; sU=r.totU;
+    sPrA=r.protA; sPrU=r.protU;
+    sCaA=r.cartA; sCaU=r.cartU;
+    sPbA=r.probA; sPbU=r.probU;
+    sRecA=r.recA; sRecU=r.recU;
+  }
+
+  var showComp = ANO === '2026';
+
+  function corCard(ant, atu, maiorEPior, corPadrao) {
+    if(!showComp) return corPadrao;
+    var piorou = maiorEPior ? Math.abs(atu) > Math.abs(ant) : Math.abs(atu) < Math.abs(ant);
+    return piorou ? '#dc2626' : '#16a34a';
+  }
+  function diffTag(ant, atu, maiorEPior) {
+    if(!showComp) return '';
+    var d = atu - ant;
+    var piorou = maiorEPior ? Math.abs(atu) > Math.abs(ant) : Math.abs(atu) < Math.abs(ant);
+    var cor = piorou ? '#dc2626' : '#16a34a';
+    var seta = d >= 0 ? '&#9650;' : '&#9660;';
+    return '<div class="kpi-diff" style="color:'+cor+'">'+seta+' '+R(Math.abs(d))+'</div>';
+  }
+
+  var cards = [
+    {lbl:'Total Atual',    val:R(sU),    sub:qU+' titulos',    color:corCard(sA,sU,true,'#2563eb'),       ant:R(sA),   extra:diffTag(sA,sU,true)},
+    {lbl:'Protestados',    val:R(sPrU),  sub:qPrU+' titulos',  color:corCard(sPrA,sPrU,true,'#dc2626'),   ant:R(sPrA), extra:diffTag(sPrA,sPrU,true)},
+    {lbl:'Em Cartorio',    val:R(sCaU),  sub:qCaU+' titulos',  color:corCard(sCaA,sCaU,true,'#7c3aed'),   ant:R(sCaA), extra:diffTag(sCaA,sCaU,true)},
+    {lbl:'Problemas',      val:R(sPbU),  sub:qPbU+' titulos',  color:corCard(sPbA,sPbU,true,'#ea580c'),   ant:R(sPbA), extra:diffTag(sPbA,sPbU,true)},
+    {lbl:'A Receber',      val:R(sRecU), sub:qRecU+' titulos', color:corCard(sRecA,sRecU,false,'#16a34a'), ant:R(sRecA),extra:diffTag(sRecA,sRecU,false)},
+  ];
+
+  document.getElementById('kpiGrid').innerHTML = cards.map(function(c){
+    return '<div class="kpi-card" style="--card-accent:'+c.color+'">'
+      +'<div class="kpi-label">'+c.lbl+'</div>'
+      +(showComp && c.ant ? '<div class="kpi-sub" style="color:var(--muted)">Ant: '+c.ant+'</div>' : '')
+      +'<div class="kpi-val">'+c.val+'</div>'
+      +'<div class="kpi-sub">'+c.sub+'</div>'
+      +c.extra
+      +'</div>';
+  }).join('');
+}
+
+// ======= CHARTS =======
+function baseOpts(yCb) {
+  return {
+    responsive:true, maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{labels:{color:'#475569',font:{family:'Inter',size:10},boxWidth:12,padding:10}},
+      tooltip:{backgroundColor:'#fff',borderColor:'#e2e8f0',borderWidth:1,titleColor:'#0f172a',bodyColor:'#475569',
+        callbacks:{label: yCb || function(c){ return ' '+c.dataset.label+': R$ '+Math.abs(c.parsed.y).toLocaleString('pt-BR',{minimumFractionDigits:2}); }}}
+    },
+    scales:{
+      x:{grid:{color:'#f1f5f9'},ticks:{color:'#64748b',font:{family:'Inter',size:10}}},
+      y:{grid:{color:'#f1f5f9'},ticks:{color:'#64748b',font:{family:'Inter',size:10},callback:function(v){ return 'R$'+Math.abs(v/1000).toFixed(0)+'k'; }}}
+    }
+  };
+}
+
+function renderCharts() {
+  var ds = DB[ANO];
+  var lbs = ds.map(function(d){ return d.mes.substring(0,3); });
+  var KEYS = ['total','prot','cart','prob','rec'];
+  var KMAP = {total:'tot',prot:'prot',cart:'cart',prob:'prob',rec:'rec'};
+
+  var vSets = [];
+  KEYS.forEach(function(k){
+    if(!SHOW[k]) return;
+    var key = KMAP[k];
+    vSets.push({label:NAMES[k]+' (Ant)',data:ds.map(function(d){ return Math.abs(d.ant[key])||0; }),borderColor:PALETTE[k].solid,backgroundColor:PALETTE[k].solid+'14',pointRadius:4,pointHoverRadius:7,borderWidth:2,tension:.35,fill:false,borderDash:[]});
+    vSets.push({label:NAMES[k]+' (Atu)',data:ds.map(function(d){ return Math.abs(d.atu[key])||0; }),borderColor:PALETTE[k].faded,backgroundColor:PALETTE[k].faded+'22',pointRadius:4,pointHoverRadius:7,borderWidth:1.5,tension:.35,fill:false,borderDash:[5,4]});
+  });
+  if(CV) CV.destroy();
+  CV = new Chart(document.getElementById('cValor'),{type:'line',data:{labels:lbs,datasets:vSets},options:baseOpts()});
+
+  var qOpts = baseOpts(function(c){ return ' '+c.dataset.label+': '+c.parsed.y+' titulos'; });
+  qOpts.scales.y.ticks.callback = function(v){ return v+' tit.'; };
+  if(CQ) CQ.destroy();
+  CQ = new Chart(document.getElementById('cQtd'),{type:'line',data:{labels:lbs,datasets:[
+    {label:'Anterior',data:ds.map(function(d){ return d.ant.qty||0; }),borderColor:'#2563eb',backgroundColor:'#2563eb18',pointRadius:5,tension:.35,fill:true,borderWidth:2},
+    {label:'Atual',   data:ds.map(function(d){ return d.atu.qty||0; }),borderColor:'#7c3aed',backgroundColor:'#7c3aed14',pointRadius:5,tension:.35,fill:true,borderWidth:2,borderDash:[5,4]}
+  ]},options:qOpts});
+
+  // Gráfico de variação — barras coloridas por categoria e por mês (verde=melhorou, vermelho=piorou)
+  // maiorEPior: total=true, prot=true, cart=true, prob=true, rec=false
+  var PIOR = {total:true, prot:true, cart:true, prob:true, rec:false};
+  var dSets = [];
+  KEYS.forEach(function(k){
+    if(!SHOW[k]) return;
+    var key = KMAP[k];
+    var data = ds.map(function(d){
+      return parseFloat(((d.atu[key]||0)-(d.ant[key]||0)).toFixed(2));
+    });
+    var cores = ds.map(function(d){
+      var ant = Math.abs(d.ant[key]||0);
+      var atu = Math.abs(d.atu[key]||0);
+      var piorou = PIOR[k] ? atu > ant : atu < ant;
+      return piorou ? '#dc262699' : '#16a34a99';
+    });
+    var coresBorda = ds.map(function(d){
+      var ant = Math.abs(d.ant[key]||0);
+      var atu = Math.abs(d.atu[key]||0);
+      var piorou = PIOR[k] ? atu > ant : atu < ant;
+      return piorou ? '#dc2626' : '#16a34a';
+    });
+    dSets.push({
+      label: NAMES[k],
+      data: data,
+      backgroundColor: cores,
+      borderColor: coresBorda,
+      borderWidth: 1.5,
+      borderRadius: 4,
+    });
+  });
+  var dOpts = {
+    responsive:true, maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{labels:{color:'#475569',font:{family:'Inter',size:10},boxWidth:12,padding:10}},
+      tooltip:{backgroundColor:'#fff',borderColor:'#e2e8f0',borderWidth:1,titleColor:'#0f172a',bodyColor:'#475569',
+        callbacks:{label:function(c){ var v=c.parsed.y; return ' '+c.dataset.label+': '+(v>=0?'+':'')+R(Math.abs(v)); }}}
+    },
+    scales:{
+      x:{grid:{color:'#f1f5f9'},ticks:{color:'#64748b',font:{family:'Inter',size:10}}},
+      y:{grid:{color:'#f1f5f9'},ticks:{color:'#64748b',font:{family:'Inter',size:10},callback:function(v){ return 'R$'+(v>=0?'':'-')+Math.abs(v/1000).toFixed(0)+'k'; }}}
+    }
+  };
+  if(CD) CD.destroy();
+  CD = new Chart(document.getElementById('cDiff'),{type:'bar',data:{labels:lbs,datasets:dSets},options:dOpts});
+}
+
+// ======= CONFERENCIA =======
+function populateSel() {
+  var sel = document.getElementById('selMes');
+  var cur = sel.value;
+  sel.innerHTML = '<option value="todos">Todos os meses</option>';
+  DB[ANO].forEach(function(d){
+    var o = document.createElement('option');
+    o.value = d.mes; o.textContent = d.mes; sel.appendChild(o);
+  });
+  if([].slice.call(sel.options).some(function(o){ return o.value===cur; })) sel.value=cur;
+  else sel.value='todos';
+}
+
+function mkPill(v, lbl) {
+  if(Math.abs(v||0)<.01) return '<span class="pill pill-zer">'+lbl+': sem alteracao</span>';
+  var cls = v>0?'pill-pos':'pill-neg';
+  var sign = v>0?'&#9650; +':'&#9660; ';
+  return '<span class="pill '+cls+'">'+lbl+': '+sign+R(Math.abs(v))+'</span>';
+}
+
+function renderConf() {
+  var filtro = document.getElementById('selMes').value;
+  var ds = DB[ANO].filter(function(d){ return filtro==='todos'||d.mes===filtro; });
+  document.getElementById('confBody').innerHTML = ds.map(function(d){
+    var a=d.ant, u=d.atu;
+    var dTot=u.tot-a.tot, dProt=u.prot-a.prot, dCart=u.cart-a.cart, dProb=u.prob-a.prob, dRec=u.rec-a.rec;
+    var hv = function(v){ return Math.abs(v||0)>.01; };
+    var id = 'mc'+d.mes.replace(/\s/g,'');
+
+    var cliHtml = '';
+    if(d.cliAtu.length) {
+      cliHtml = '<div class="cli-section"><h4>Carteira por cliente - dia atual</h4><div class="cli-grid">'
+        + d.cliAtu.map(function(c){
+            return '<div class="cli-card">'
+              +'<div class="cli-nome">'+c.nome+'</div>'
+              +(c.cod?'<div class="cli-cod">#'+c.cod+'</div>':'')
+              +'<div class="cli-val">R$ '+(c.val||0).toLocaleString('pt-BR',{minimumFractionDigits:2})+'</div>'
+              +'<div class="cli-qty">'+c.qty+' titulo(s)'+(c.obs?' - '+c.obs:'')+'</div>'
+              +'</div>';
+          }).join('')
+        +'</div></div>';
+    }
+
+    var totBar = '';
+    if(d.carteira>0) {
+      totBar = '<div class="tot-bar">'
+        +'<div class="tot-item"><div class="tl">Carteira Total</div><div class="tv" style="color:var(--accent)">'+R(d.carteira)+'</div></div>'
+        +'<div class="tot-item"><div class="tl">% Atraso / Carteira</div><div class="tv" style="color:var(--red)">'+PCT(u.tot,d.carteira)+'</div></div>'
+        +'<div class="tot-item"><div class="tl">% Protestados</div><div class="tv" style="color:var(--red)">'+PCT(u.prot,d.carteira)+'</div></div>'
+        +(hv(u.cart)?'<div class="tot-item"><div class="tl">% Em Cartorio</div><div class="tv" style="color:var(--purple)">'+PCT(u.cart,d.carteira)+'</div></div>':'')
+        +(hv(u.rec)?'<div class="tot-item"><div class="tl">% A Receber</div><div class="tv" style="color:var(--green)">'+PCT(u.rec,d.carteira)+'</div></div>':'')
+        +'</div>';
+    }
+
+    function row(lbl,val,qty,cls){ return '<tr><td class="td-lbl">'+lbl+'</td><td class="td-val '+cls+'">'+val+'</td><td class="td-qty">'+qty+'</td></tr>'; }
+
+    return '<div class="mes-card" id="'+id+'">'
+      +'<div class="mes-hd" onclick="tog(\''+id+'\')">'
+        +'<h3>'+d.mes+' <span style="font-size:.68rem;font-weight:500;color:var(--muted)">'+ANO+'</span></h3>'
+        +'<div class="mes-hd-r">'
+          +(hv(u.tot)?'<span class="tag tag-blue">R$ '+(u.tot/1000).toFixed(1)+'k &middot; '+u.qty+' tit.</span>':'')
+          +(hv(u.prot)?'<span class="tag tag-red">Prot. '+R(u.prot)+'</span>':'')
+          +(hv(u.cart)?'<span class="tag tag-purple">Cart. '+R(u.cart)+'</span>':'')
+          +(hv(u.prob)?'<span class="tag tag-orange">Prob. '+R(u.prob)+'</span>':'')
+          +(hv(u.rec)?'<span class="tag tag-green">Rec. '+R(u.rec)+'</span>':'')
+          +(!hv(u.tot)?'<span class="tag tag-gray">Sem dados</span>':'')
+          +'<span class="chevron">&#9660;</span>'
+        +'</div>'
+      +'</div>'
+      +'<div class="mes-body">'
+        +'<div class="diff-row">'+mkPill(dTot,'Total')+mkPill(dProt,'Protestados')+mkPill(dCart,'Em Cartorio')+mkPill(dProb,'Problemas')+mkPill(dRec,'A Receber')+'</div>'
+        +'<div class="cmp">'
+          +'<div class="cmp-col"><div class="cmp-hd hd-a">&#9664; DIA ANTERIOR</div>'
+            +'<table class="cmp-tbl">'
+              +row('Total bruto',R(a.tot),a.qty+' tit.','v-blu')
+              +row('Protestados',R(a.prot),a.pQty+' tit.','v-red')
+              +row('Em Cartorio',R(a.cart),(a.cQty||0)+' tit.',hv(a.cart)?'v-red':'v-nor')
+              +row('Problemas',R(a.prob),a.bQty+' tit.','v-red')
+              +row('CenterKey',R(a.ck),'','v-grn')
+              +row('A Receber',R(a.rec),a.rQty+' tit.','v-grn')
+              +(a.descC&&a.descC!='--'?'<tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">'+a.descC+'</td></tr>':'')
+              +(a.descP&&a.descP!='--'?'<tr><td class="td-lbl">Clientes prob.</td><td class="v-mute" colspan="2">'+a.descP+'</td></tr>':'')
+            +'</table></div>'
+          +'<div class="cmp-col"><div class="cmp-hd hd-u">&#9654; DIA ATUAL</div>'
+            +'<table class="cmp-tbl">'
+              +row('Total bruto',R(u.tot),u.qty+' tit.','v-blu')
+              +row('Protestados',R(u.prot),u.pQty+' tit.','v-red')
+              +row('Em Cartorio',R(u.cart),(u.cQty||0)+' tit.',hv(u.cart)?'v-red':'v-nor')
+              +row('Problemas',R(u.prob),u.bQty+' tit.','v-red')
+              +row('CenterKey',R(u.ck),'','v-grn')
+              +row('A Receber',R(u.rec),u.rQty+' tit.','v-grn')
+              +(u.descC&&u.descC!='--'?'<tr><td class="td-lbl">Clientes cart.</td><td class="v-mute" colspan="2">'+u.descC+'</td></tr>':'')
+              +(u.descP&&u.descP!='--'?'<tr><td class="td-lbl">Clientes prob.</td><td class="v-mute" colspan="2">'+u.descP+'</td></tr>':'')
+            +'</table></div>'
+        +'</div>'
+        +cliHtml+totBar
+      +'</div>'
+    +'</div>';
+  }).join('');
+  renderTotaisGerais();
+}
+
+function tog(id){ document.getElementById(id).classList.toggle('collapsed'); }
+function expandAll(){ document.querySelectorAll('.mes-card').forEach(function(c){ c.classList.remove('collapsed'); }); }
+function collapseAll(){ document.querySelectorAll('.mes-card').forEach(function(c){ c.classList.add('collapsed'); }); }
+
+function renderTotaisGerais() {
+  var ds = DB[ANO].filter(function(d){ return d.carteira > 0; });
+  if(!ds.length) { document.getElementById('totaisGerais').style.display='none'; return; }
+
+  var somaCart  = ds.reduce(function(a,d){ return a+d.carteira; }, 0);
+  var somaTotA  = ds.reduce(function(a,d){ return a+d.ant.tot;  }, 0);
+  var somaTotU  = ds.reduce(function(a,d){ return a+d.atu.tot;  }, 0);
+  var somaProtA = ds.reduce(function(a,d){ return a+d.ant.prot; }, 0);
+  var somaProtU = ds.reduce(function(a,d){ return a+d.atu.prot; }, 0);
+  var somaCkA   = ds.reduce(function(a,d){ return a+d.ant.ck;   }, 0);
+  var somaCkU   = ds.reduce(function(a,d){ return a+d.atu.ck;   }, 0);
+  var somaProbA = ds.reduce(function(a,d){ return a+d.ant.prob; }, 0);
+  var somaProbU = ds.reduce(function(a,d){ return a+d.atu.prob; }, 0);
+  var somaCartA = ds.reduce(function(a,d){ return a+d.ant.cart; }, 0);
+  var somaCartU = ds.reduce(function(a,d){ return a+d.atu.cart; }, 0);
+  var somaRecA  = ds.reduce(function(a,d){ return a+d.ant.rec;  }, 0);
+  var somaRecU  = ds.reduce(function(a,d){ return a+d.atu.rec;  }, 0);
+
+  var PCT2 = function(v){ return somaCart>0 ? (Math.abs(v)/somaCart*100).toFixed(2)+'%' : '--'; };
+  var showComp = ANO === '2026';
+
+  // maiorEPior=true: valor absoluto maior = pior = vermelho (prot, prob, cart, total)
+  // maiorEPior=false: valor maior = melhor = verde (rec, center)
+  function mkItem(lbl, valAnt, valAtu, corBase, bgBase, maiorEPior) {
+    var absAnt = Math.abs(valAnt);
+    var absAtu = Math.abs(valAtu);
+    var piorou = maiorEPior ? absAtu > absAnt : absAtu < absAnt;
+    var corComp = piorou ? 'var(--red)' : 'var(--green)';
+    var diffVal = absAtu - absAnt;
+    var seta = diffVal >= 0 ? '&#9650;' : '&#9660;';
+
+    return '<div style="background:'+bgBase+';border:1px solid;border-color:'+corBase+'40;border-left:4px solid '+corBase+';border-radius:10px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.25rem;">'
+      +'<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:'+corBase+';">'+lbl+'</div>'
+      +(showComp ? '<div style="font-family:\'JetBrains Mono\',monospace;font-size:.65rem;color:var(--muted);">Ant: '+R(valAnt)+'</div>' : '')
+      +'<div style="font-family:\'JetBrains Mono\',monospace;font-size:1.05rem;font-weight:800;color:'+(showComp?corComp:corBase)+';">'
+        +R(valAtu)
+        +(showComp ? ' <span style="font-size:.75rem;color:'+corComp+';">'+seta+' '+R(Math.abs(diffVal))+'</span>' : '')
+      +'</div>'
+      +'<div style="font-family:\'JetBrains Mono\',monospace;font-size:.7rem;color:'+corBase+';opacity:.8;">'+PCT2(valAtu)+' da carteira</div>'
+      +'</div>';
+  }
+
+  var cartHtml = '<div style="background:var(--accent-l);border:1px solid;border-color:#2563eb40;border-left:4px solid var(--accent);border-radius:10px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.25rem;">'
+    +'<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);">Soma das Carteiras</div>'
+    +'<div style="font-family:\'JetBrains Mono\',monospace;font-size:1.25rem;font-weight:800;color:var(--accent);">'+R(somaCart)+'</div>'
+    +'</div>';
+
+  document.getElementById('totaisGerais').style.display = 'block';
+  document.getElementById('totaisAno').textContent = ANO;
+  document.getElementById('totaisGeraisGrid').innerHTML =
+      cartHtml
+    + mkItem('Total Atraso',  somaTotA,  somaTotU,  'var(--red)',    'var(--red-l)',    true)
+    + mkItem('Protestados',   somaProtA, somaProtU, 'var(--red)',    'var(--red-l)',    true)
+    + mkItem('Center',        somaCkA,   somaCkU,   'var(--accent)', 'var(--accent-l)', false)
+    + mkItem('Problemas',     somaProbA, somaProbU, 'var(--orange)', 'var(--orange-l)', true)
+    + mkItem('Em Cartorio',   somaCartA, somaCartU, 'var(--purple)', 'var(--purple-l)', true)
+    + mkItem('A Receber',     somaRecA,  somaRecU,  'var(--green)',  'var(--green-l)',  false);
+}
+
+// ======= DRAG & DROP =======
+function initDragDrop() {
+  document.addEventListener('dragenter', function(e){ e.preventDefault(); document.body.classList.add('dragging'); });
+  document.addEventListener('dragleave', function(e){ if(!e.relatedTarget) document.body.classList.remove('dragging'); });
+  document.addEventListener('dragover',  function(e){ e.preventDefault(); });
+  document.addEventListener('drop', function(e){
+    e.preventDefault(); document.body.classList.remove('dragging');
+    var file = e.dataTransfer.files[0];
+    if(file && (file.name.endsWith('.xlsx')||file.name.endsWith('.xls'))) processarArquivo(file);
+    else alert('Por favor, arraste um arquivo .xlsx');
+  });
+  var drop = document.getElementById('uploadDrop');
+  if(drop){
+    drop.addEventListener('dragenter', function(){ drop.classList.add('drag-over'); });
+    drop.addEventListener('dragleave', function(){ drop.classList.remove('drag-over'); });
+    drop.addEventListener('drop',      function(){ drop.classList.remove('drag-over'); });
+  }
+  try {
+    var last = localStorage.getItem('atrasos_last_file');
+    if(last){
+      var parsed = JSON.parse(last);
+      document.getElementById('lastFileName').textContent = parsed.name;
+      document.getElementById('lastFileDate').textContent = 'Carregado em: '+parsed.date;
+      document.getElementById('lastFileBar').style.display = 'flex';
+    }
+  } catch(e){}
+}
+
+function salvarMemoria(fileName) {
+  try {
+    var now = new Date().toLocaleString('pt-BR');
+    localStorage.setItem('atrasos_last_file', JSON.stringify({name:fileName,date:now}));
+    document.getElementById('lastFileName').textContent = fileName;
+    document.getElementById('lastFileDate').textContent = 'Carregado em: '+now;
+    document.getElementById('lastFileBar').style.display = 'flex';
+    document.getElementById('headerFileName').textContent = fileName;
+    document.getElementById('headerFileBadge').style.display = 'flex';
+  } catch(e){}
+}
+
+function carregarPlanilha(event) {
+  var file = event.target.files[0];
+  if(!file) return;
+  event.target.value = '';
+  processarArquivo(file);
+}
+
+function processarArquivo(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(e.target.result, {type:'array',cellFormula:false,cellText:false});
+      DB['2025'] = []; DB['2026'] = [];
+      var MESES = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+      var MESES2 = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+      ['2025','2026'].forEach(function(ano){
+        if(!wb.SheetNames.includes(ano)) return;
+        var ws = wb.Sheets[ano];
+        var rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+        var colAnt = 0, colAtu = ano==='2025'?4:6, labelCol = ano==='2025'?2:8;
+        var carteiraGeral = 0; // nao usado mais
+
+        var blocos = [];
+        rows.forEach(function(row,i){
+          var v = row[colAnt];
+          if(typeof v==='string'){
+            var m = MESES.concat(MESES2).find(function(m){ return v.trim().startsWith(m); });
+            if(m) blocos.push({mes:m, startRow:i});
+          }
+        });
+        blocos.push({mes:null, startRow:rows.length});
+
+        blocos.forEach(function(bloco, bi){
+          if(!bloco.mes) return;
+          var seg = rows.slice(bloco.startRow, blocos[bi+1].startRow);
+          var num = function(v){ return typeof v==='number'?v:0; };
+          var linhaDoMes = rows[bloco.startRow];
+          // Carteira: 2025 = col I (idx8) da linha do mês; 2026 = col P (idx15) da linha do mês ou anterior
+          var carteira = 0;
+          if(ano==='2025') {
+            carteira = typeof linhaDoMes[8]==='number' ? linhaDoMes[8] : 0;
+          } else {
+            // Tenta col P da própria linha, se não houver tenta linhas anteriores (caso Janeiro)
+            for(var off=0; off>=-3; off--) {
+              var ri = bloco.startRow + off;
+              if(ri>=0 && rows[ri] && typeof rows[ri][15]==='number' && rows[ri][15]>1000) {
+                carteira = rows[ri][15];
+                break;
+              }
+            }
+          }
+          var tot_a=0,qty_a=0,prot_a=0,pQty_a=0,cart_a=0,cQty_a=0,prob_a=0,bQty_a=0,ck_a=0,rec_a=0,rQty_a=0;
+          var tot_u=0,qty_u=0,prot_u=0,pQty_u=0,cart_u=0,cQty_u=0,prob_u=0,bQty_u=0,ck_u=0,rec_u=0,rQty_u=0;
+          var descP='--', descC='--';
+
+          seg.forEach(function(row){
+            var lbl = typeof row[labelCol]==='string' ? row[labelCol].trim() : '';
+            var a0=num(row[colAnt]), a1=num(row[colAnt+1]);
+            var u0=typeof row[colAtu]==='number'?row[colAtu]:a0;
+            var u1=typeof row[colAtu+1]==='number'?row[colAtu+1]:a1;
+            if(!lbl && Math.abs(a0)>0 && tot_a===0){ tot_a=a0; qty_a=Math.abs(a1); tot_u=u0; qty_u=Math.abs(u1); }
+            else if(lbl==='Protestados'){ prot_a=a0; pQty_a=Math.abs(a1); prot_u=typeof row[colAtu]==='number'?row[colAtu]:a0; pQty_u=typeof row[colAtu+1]==='number'?Math.abs(row[colAtu+1]):pQty_a; }
+            else if(lbl==='Em cartorio'||lbl==='Em Cartorio'||lbl==='Em cartório'||lbl==='Em Cartório'){ cart_a=a0; cQty_a=Math.abs(a1); descC='Em Cartorio'; cart_u=typeof row[colAtu]==='number'?row[colAtu]:a0; cQty_u=typeof row[colAtu+1]==='number'?Math.abs(row[colAtu+1]):cQty_a; }
+            else if(lbl==='Problemas'){ prob_a=a0; bQty_a=Math.abs(a1); prob_u=typeof row[colAtu]==='number'?row[colAtu]:a0; bQty_u=typeof row[colAtu+1]==='number'?Math.abs(row[colAtu+1]):bQty_a; }
+            else if(lbl==='CenterKey'){ ck_a=a0; ck_u=typeof row[colAtu]==='number'?row[colAtu]:a0; }
+            else if(lbl==='A Receber'){ rec_a = typeof row[colAnt]==='number' ? row[colAnt] : 0; rec_u = typeof row[colAtu]==='number' ? row[colAtu] : rec_a; rQty_a=Math.abs(a1||0); rQty_u=Math.abs(u1||0); }
+            var excluir = ['Protestados','Em cartorio','Em Cartorio','Em cartório','Em Cartório','Problemas','CenterKey','A Receber'];
+            if(lbl && excluir.indexOf(lbl)<0 && !MESES.concat(MESES2).some(function(m){ return lbl.startsWith(m); }) && a0<0) descP=lbl;
+          });
+
+          DB[ano].push({mes:bloco.mes, carteira:carteira,
+            ant:{tot:tot_a,qty:qty_a,prot:prot_a,pQty:pQty_a,cart:cart_a,cQty:cQty_a,prob:prob_a,bQty:bQty_a,ck:ck_a,rec:rec_a,rQty:rQty_a,descP:descP,descC:descC},
+            atu:{tot:tot_u,qty:qty_u,prot:prot_u,pQty:pQty_u,cart:cart_u,cQty:cQty_u,prob:prob_u,bQty:bQty_u,ck:ck_u,rec:rec_u,rQty:rQty_u,descP:descP,descC:descC},
+            cliAtu:[]});
+        });
+
+        // Resumo consolidado 2026 (linhas finais)
+        if(ano==='2026') {
+          var ng = function(v){ return typeof v==='number' ? v : 0; };
+          DB['2026'].resumo = {
+            protA: ng(rows[139][1]),  protU: ng(rows[139][7]),
+            cartA: ng(rows[142][1]),  cartU: ng(rows[142][7]),
+            probA: ng(rows[141][1]),  probU: ng(rows[141][7]),
+            recA:  ng(rows[143][1]),  recU:  ng(rows[143][7]),
+            totA:  ng(rows[144][1]),  totU:  ng(rows[144][7]),
+          };
+        }
+      });
+      document.getElementById('telaInicial').style.display = 'none';
+      document.getElementById('mainNav').style.display = 'flex';
+      document.querySelectorAll('.page').forEach(function(p){ p.style.display='none'; });
+      document.getElementById('page-graficos').style.display = 'block';
+      document.querySelectorAll('.nav-btn').forEach(function(b,i){ b.classList.toggle('active',i===0); });
+      ANO = DB['2026'].length>0 ? '2026' : '2025';
+      document.querySelectorAll('#anoBtns .ano-btn').forEach(function(b){ b.classList.toggle('active', b.textContent===ANO); });
+      populateSel(); renderAll();
+    } catch(err) {
+      console.error(err);
+      alert('Erro ao ler a planilha:\n'+err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ======= IMPRESSAO / EXPORTAR =======
+function imprimirDashboard(){ expandAll(); setTimeout(function(){ window.print(); }, 300); }
+
+function exportarExcel() {
+  var wb = XLSX.utils.book_new();
+  var resumo = [['Mes','Ano','Ant. Total','Ant. Qtd','Ant. Protestados','Ant. Prot.Qtd','Ant. Em Cartorio','Ant. Cart.Qtd','Ant. Problemas','Ant. Prob.Qtd','Ant. CenterKey','Ant. A Receber','Ant. Rec.Qtd','Atu. Total','Atu. Qtd','Atu. Protestados','Atu. Prot.Qtd','Atu. Em Cartorio','Atu. Cart.Qtd','Atu. Problemas','Atu. Prob.Qtd','Atu. CenterKey','Atu. A Receber','Atu. Rec.Qtd','Delta Total','Delta Prot','Delta Cart','Delta Prob','Delta Rec','Carteira','% Atraso','% Prot.']];
+  ['2025','2026'].forEach(function(ano){
+    DB[ano].forEach(function(d){
+      var a=d.ant, u=d.atu;
+      resumo.push([d.mes,ano,a.tot,a.qty,Math.abs(a.prot),a.pQty,Math.abs(a.cart),a.cQty||0,Math.abs(a.prob),a.bQty,a.ck,a.rec,a.rQty,u.tot,u.qty,Math.abs(u.prot),u.pQty,Math.abs(u.cart),u.cQty||0,Math.abs(u.prob),u.bQty,u.ck,u.rec,u.rQty,+(u.tot-a.tot).toFixed(2),+(u.prot-a.prot).toFixed(2),+(u.cart-a.cart).toFixed(2),+(u.prob-a.prob).toFixed(2),+(u.rec-a.rec).toFixed(2),d.carteira,d.carteira>0?+((u.tot/d.carteira)*100).toFixed(2):0,d.carteira>0?+((Math.abs(u.prot)/d.carteira)*100).toFixed(2):0]);
+    });
+  });
+  var ws1 = XLSX.utils.aoa_to_sheet(resumo);
+  XLSX.utils.book_append_sheet(wb, ws1, 'Resumo Mensal');
+  var cli = [['Mes','Ano','Cliente','Codigo','Valor','Qtd','Obs']];
+  ['2025','2026'].forEach(function(ano){
+    DB[ano].forEach(function(d){
+      if(!d.cliAtu.length) cli.push([d.mes,ano,'--','--',0,0,'']);
+      else d.cliAtu.forEach(function(c){ cli.push([d.mes,ano,c.nome,c.cod||'--',c.val||0,c.qty||0,c.obs||'']); });
+    });
+  });
+  var ws2 = XLSX.utils.aoa_to_sheet(cli);
+  XLSX.utils.book_append_sheet(wb, ws2, 'Carteira por Cliente');
+  XLSX.writeFile(wb, 'Atrasos_Dashboard_'+ANO+'.xlsx');
+}
+
+function renderAll(){ renderKPI(); renderCharts(); }
+
+// ======= CARREGAR AUTOMATICO DO SHAREPOINT =======
+var SHAREPOINT_URL = 'https://finanfactoring.sharepoint.com/:x:/s/FINANCEIRO/IQBPso3V4M1mTZpRlggRFrFlAfzWwofmXgQ9n1BLlw7GB-Q?download=1&e=qPkczJ';
+
+function carregarDoSharePoint() {
+  var status = document.getElementById('spStatus');
+  if(status) status.textContent = 'Carregando dados do SharePoint...';
+
+  fetch(SHAREPOINT_URL)
+    .then(function(resp) {
+      if(!resp.ok) throw new Error('Erro HTTP: ' + resp.status);
+      return resp.arrayBuffer();
+    })
+    .then(function(buffer) {
+      var wb = XLSX.read(buffer, {type:'array', cellFormula:false, cellText:false});
+      // reusar processarArquivo internamente
+      processarBuffer(wb);
+      if(status) status.textContent = '✅ Dados atualizados automaticamente';
+    })
+    .catch(function(err) {
+      console.warn('SharePoint automático falhou:', err);
+      if(status) status.textContent = '⚠️ Arraste o Atrasos.xlsx para atualizar';
+    });
+}
+
+function processarBuffer(wb) {
+  DB['2025'] = []; DB['2026'] = [];
+  var MESES = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var MESES2 = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  ['2025','2026'].forEach(function(ano){
+    if(!wb.SheetNames.includes(ano)) return;
+    var ws = wb.Sheets[ano];
+    var rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+    var colAnt=0, colAtu=ano==='2025'?4:6, labelCol=ano==='2025'?2:8;
+    var carteiraGeral = ano==='2026' ? (typeof rows[0][15]==='number'?rows[0][15]:0) : 0;
+    var blocos=[];
+    rows.forEach(function(row,i){
+      var v=row[colAnt];
+      if(typeof v==='string'){
+        var m=MESES.concat(MESES2).find(function(m){ return v.trim().startsWith(m); });
+        if(m) blocos.push({mes:m,startRow:i});
+      }
+    });
+    blocos.push({mes:null,startRow:rows.length});
+    blocos.forEach(function(bloco,bi){
+      if(!bloco.mes) return;
+      var seg=rows.slice(bloco.startRow,blocos[bi+1].startRow);
+      var num=function(v){ return typeof v==='number'?v:0; };
+      var linhaDoMes=rows[bloco.startRow];
+      var carteira=0;
+      if(ano==='2025'){ carteira=typeof linhaDoMes[8]==='number'?linhaDoMes[8]:0; }
+      else { for(var off=0;off>=-3;off--){ var ri=bloco.startRow+off; if(ri>=0&&rows[ri]&&typeof rows[ri][15]==='number'&&rows[ri][15]>1000){ carteira=rows[ri][15]; break; } } }
+      var tot_a=0,qty_a=0,prot_a=0,pQty_a=0,cart_a=0,cQty_a=0,prob_a=0,bQty_a=0,ck_a=0,rec_a=0,rQty_a=0;
+      var tot_u=0,qty_u=0,prot_u=0,pQty_u=0,cart_u=0,cQty_u=0,prob_u=0,bQty_u=0,ck_u=0,rec_u=0,rQty_u=0;
+      var descP='--',descC='--';
+      seg.forEach(function(row){
+        var lbl=typeof row[labelCol]==='string'?row[labelCol].trim():'';
+        var a0=num(row[colAnt]),a1=num(row[colAnt+1]);
+        var u0=typeof row[colAtu]==='number'?row[colAtu]:a0,u1=typeof row[colAtu+1]==='number'?row[colAtu+1]:a1;
+        if(!lbl&&Math.abs(a0)>0&&tot_a===0){tot_a=a0;qty_a=Math.abs(a1);tot_u=u0;qty_u=Math.abs(u1);}
+        else if(lbl==='Protestados'){prot_a=a0;pQty_a=Math.abs(a1);prot_u=typeof row[colAtu]==='number'?row[colAtu]:a0;pQty_u=typeof row[colAtu+1]==='number'?Math.abs(row[colAtu+1]):pQty_a;}
+        else if(lbl==='Em cartorio'||lbl==='Em Cartorio'||lbl==='Em cartório'||lbl==='Em Cartório'){cart_a=a0;cQty_a=Math.abs(a1);descC='Em Cartorio';cart_u=typeof row[colAtu]==='number'?row[colAtu]:a0;cQty_u=typeof row[colAtu+1]==='number'?Math.abs(row[colAtu+1]):cQty_a;}
+        else if(lbl==='Problemas'){prob_a=a0;bQty_a=Math.abs(a1);prob_u=typeof row[colAtu]==='number'?row[colAtu]:a0;bQty_u=typeof row[colAtu+1]==='number'?Math.abs(row[colAtu+1]):bQty_a;}
+        else if(lbl==='CenterKey'){ck_a=a0;ck_u=typeof row[colAtu]==='number'?row[colAtu]:a0;}
+        else if(lbl==='A Receber'){rec_a=typeof row[colAnt]==='number'?row[colAnt]:0;rec_u=typeof row[colAtu]==='number'?row[colAtu]:rec_a;rQty_a=Math.abs(a1||0);rQty_u=Math.abs(u1||0);}
+        var excluir=['Protestados','Em cartorio','Em Cartorio','Em cartório','Em Cartório','Problemas','CenterKey','A Receber'];
+        if(lbl&&excluir.indexOf(lbl)<0&&!MESES.concat(MESES2).some(function(m){ return lbl.startsWith(m); })&&a0<0) descP=lbl;
+      });
+      DB[ano].push({mes:bloco.mes,carteira:carteira,
+        ant:{tot:tot_a,qty:qty_a,prot:prot_a,pQty:pQty_a,cart:cart_a,cQty:cQty_a,prob:prob_a,bQty:bQty_a,ck:ck_a,rec:rec_a,rQty:rQty_a,descP:descP,descC:descC},
+        atu:{tot:tot_u,qty:qty_u,prot:prot_u,pQty:pQty_u,cart:cart_u,cQty:cQty_u,prob:prob_u,bQty:bQty_u,ck:ck_u,rec:rec_u,rQty:rQty_u,descP:descP,descC:descC},
+        cliAtu:[]});
+    });
+    if(ano==='2026'){
+      var ng=function(v){ return typeof v==='number'?v:0; };
+      DB['2026'].resumo={protA:ng(rows[139][1]),protU:ng(rows[139][7]),cartA:ng(rows[142][1]),cartU:ng(rows[142][7]),probA:ng(rows[141][1]),probU:ng(rows[141][7]),recA:ng(rows[143][1]),recU:ng(rows[143][7]),totA:ng(rows[144][1]),totU:ng(rows[144][7])};
+    }
+  });
+
+  document.getElementById('telaInicial').style.display='none';
+  document.getElementById('mainNav').style.display='flex';
+  document.querySelectorAll('.page').forEach(function(p){ p.style.display='none'; });
+  document.getElementById('page-graficos').style.display='block';
+  document.querySelectorAll('.nav-btn').forEach(function(b,i){ b.classList.toggle('active',i===0); });
+  ANO=DB['2026'].length>0?'2026':'2025';
+  document.querySelectorAll('#anoBtns .ano-btn').forEach(function(b){ b.classList.toggle('active',b.textContent===ANO); });
+  populateSel(); renderAll();
+}
+
+populateSel();
+initDragDrop();
+carregarDoSharePoint();
+</script>
+
+
+</div></body></html>
